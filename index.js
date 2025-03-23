@@ -69,7 +69,9 @@ function listGates() {
     }
 }
 function execute() {
-    fs.mkdirSync(fileDir);
+    if (!fs.existsSync(fileDir)) {
+        fs.mkdirSync(fileDir);
+    }
     var selectedFeature = process.argv[2];
     switch (selectedFeature) {
         case "add": {
