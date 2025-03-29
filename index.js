@@ -48,6 +48,9 @@ function removeGate(gatename) {
 function blinkToGate(gatename) {
     var gatesObject = getGatesObject();
     var GatePath = gatesObject["".concat(gatename)];
+    if (!GatePath) {
+        console.error("Path for this gate was not found");
+    }
     var command = "code ".concat(GatePath, " -r");
     child_process.exec(command, function (error, _, stderr) {
         if (error) {
@@ -67,6 +70,12 @@ function listGates() {
         var _b = _a[_i], key = _b[0], value = _b[1];
         console.log("".concat(key, ": ").concat(value));
     }
+}
+function showHelp() {
+    var manualContent = fs.readFileSync(process.cwd() + "/usage.txt", {
+        encoding: "utf-8",
+    });
+    console.log(manualContent);
 }
 function execute() {
     if (!fs.existsSync(fileDir)) {
@@ -91,7 +100,10 @@ function execute() {
             break;
         }
         default: {
-            break;
+            if (!process.argv[2]) {
+                showHelp();
+                break;
+            }
         }
     }
 }
