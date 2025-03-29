@@ -1,3 +1,3 @@
 export type GatesObject = {
-  [key: string]: string;
+  [key: string]: string | undefined;
 };

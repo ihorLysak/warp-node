@@ -4,6 +4,7 @@ import * as path from "path";
 import * as os from "os";
 import * as child_process from "child_process";
 import { type GatesObject } from "./types";
+
 const fileDir = path.join(os.homedir(), ".local", "share", "warp");
 const gatesFilePath = path.join(fileDir, "gates.json");
 
@@ -55,6 +56,10 @@ function blinkToGate(gatename: string) {
 
   const GatePath = gatesObject[`${gatename}`];
 
+  if (!GatePath) {
+    console.error("Path for this gate was not found");
+  }
+
   const command = `code ${GatePath} -r`;
 
   child_process.exec(command, (error, _, stderr) => {
@@ -76,6 +81,14 @@ function listGates() {
   for (const [key, value] of Object.entries(gatesObject)) {
     console.log(`${key}: ${value}`);
   }
+}
+
+function showHelp() {
+  const manualContent = fs.readFileSync(process.cwd() + "/usage.txt", {
+    encoding: "utf-8",
+  });
+
+  console.log(manualContent);
 }
 
 function execute() {
@@ -102,7 +115,10 @@ function execute() {
       break;
     }
     default: {
-      break;
+      if (!process.argv[2]) {
+        showHelp();
+        break;
+      }
     }
   }
 }

@@ -1,1 +1,1 @@
-export { GatesObject } from "./gates-object.type";
+export { type GatesObject } from "./gates-object.type";
