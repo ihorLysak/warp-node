@@ -115,10 +115,8 @@ function execute() {
       break;
     }
     default: {
-      if (!process.argv[2]) {
-        showHelp();
-        break;
-      }
+      showHelp();
+      break;
     }
   }
 }
