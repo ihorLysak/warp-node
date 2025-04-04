@@ -5,8 +5,11 @@ var fs = require("fs");
 var path = require("path");
 var os = require("os");
 var child_process = require("child_process");
+var enums_1 = require("./enums");
+var constants_1 = require("./constants");
 var fileDir = path.join(os.homedir(), ".local", "share", "warp");
 var gatesFilePath = path.join(fileDir, "gates.json");
+var usageFilePath = path.join(fileDir, "usage.txt");
 function getGatesObject() {
     if (fs.existsSync(gatesFilePath)) {
         var gatesContent = fs.readFileSync(gatesFilePath, "utf-8");
@@ -72,10 +75,35 @@ function listGates() {
     }
 }
 function showHelp() {
-    var manualContent = fs.readFileSync(process.cwd() + "/usage.txt", {
-        encoding: "utf-8",
+    try {
+        var manualContent_1 = fs.readFileSync(usageFilePath, {
+            encoding: "utf-8",
+        });
+        console.log(manualContent_1);
+    }
+    catch (_a) {
+        fs.writeFileSync(usageFilePath, constants_1.manualContent, { encoding: "utf-8" });
+        console.log(constants_1.manualContent);
+    }
+}
+function blinkTerminal(gatename) {
+    var gatesObject = getGatesObject();
+    console.log(gatesObject);
+    var GatePath = gatesObject["".concat(gatename)];
+    if (!GatePath) {
+        console.error("Path for this gate was not found");
+    }
+    child_process.exec("bash ".concat(process.cwd(), "/blink-terminal.sh ").concat(GatePath), function (error, stdout, stderr) {
+        if (error) {
+            console.error("Error: ".concat(error.message));
+            return;
+        }
+        if (stderr) {
+            console.error("stderr: ".concat(stderr));
+            return;
+        }
+        console.log("stdout: ".concat(stdout));
     });
-    console.log(manualContent);
 }
 function execute() {
     if (!fs.existsSync(fileDir)) {
@@ -100,10 +128,12 @@ function execute() {
             break;
         }
         default: {
-            if (!process.argv[2]) {
-                showHelp();
+            if (!enums_1.Commands[process.argv[2]]) {
+                blinkTerminal(process.argv[2]);
                 break;
             }
+            showHelp();
+            break;
         }
     }
 }

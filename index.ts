@@ -3,11 +3,17 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import * as child_process from "child_process";
-import { type GatesObject } from "./types";
+import { type GatesObject, type ConfigObject } from "./types";
+import { Commands } from "./enums";
+import { manualContent } from "./constants";
 
 const fileDir = path.join(os.homedir(), ".local", "share", "warp");
-const gatesFilePath = path.join(fileDir, "gates.json");
 
+const gatesFilePath = path.join(fileDir, "gates.json");
+const configFilePath = path.join(fileDir, "config.json");
+const usageFilePath = path.join(fileDir, "usage.txt");
+
+//TODO: create a generic function for these objects retrieval
 function getGatesObject(): GatesObject {
   if (fs.existsSync(gatesFilePath)) {
     const gatesContent = fs.readFileSync(gatesFilePath, "utf-8");
@@ -20,6 +26,18 @@ function getGatesObject(): GatesObject {
   }
 }
 
+function getConfigObject(): ConfigObject {
+  if (fs.existsSync(configFilePath)) {
+    const configContent = fs.readFileSync(configFilePath, "utf-8");
+    return JSON.parse(configContent);
+  } else {
+    fs.writeFileSync(configFilePath, '{"CLIEditorLauncher": "code"}', "utf-8");
+
+    const configContent = fs.readFileSync(configFilePath, "utf-8");
+    return JSON.parse(configContent);
+  }
+}
+
 function addGate(gatename: string) {
   if (fs.existsSync(gatesFilePath)) {
     const gatesObject = getGatesObject();
@@ -28,7 +46,11 @@ function addGate(gatename: string) {
 
     fs.writeFileSync(gatesFilePath, JSON.stringify(gatesObject), "utf-8");
   } else {
-    fs.writeFileSync(gatesFilePath, "{}", "utf-8");
+    fs.writeFileSync(
+      gatesFilePath,
+      `{"${gatename}": ${process.cwd()}}`,
+      "utf-8"
+    );
   }
 }
 
@@ -53,6 +75,7 @@ function removeGate(gatename: string) {
 
 function blinkToGate(gatename: string) {
   const gatesObject = getGatesObject();
+  const { CLIEditorLauncher } = getConfigObject();
 
   const GatePath = gatesObject[`${gatename}`];
 
@@ -60,7 +83,7 @@ function blinkToGate(gatename: string) {
     console.error("Path for this gate was not found");
   }
 
-  const command = `code ${GatePath} -r`;
+  const command = `${CLIEditorLauncher} ${GatePath} -r`;
 
   child_process.exec(command, (error, _, stderr) => {
     if (error) {
@@ -84,11 +107,54 @@ function listGates() {
 }
 
 function showHelp() {
-  const manualContent = fs.readFileSync(process.cwd() + "/usage.txt", {
-    encoding: "utf-8",
-  });
+  try {
+    const manualContent = fs.readFileSync(usageFilePath, {
+      encoding: "utf-8",
+    });
 
-  console.log(manualContent);
+    console.log(manualContent);
+  } catch {
+    fs.writeFileSync(usageFilePath, manualContent, { encoding: "utf-8" });
+
+    console.log(manualContent);
+  }
+}
+
+function blinkTerminal(gatename: string) {
+  const gatesObject = getGatesObject();
+
+  console.log(gatesObject);
+  const GatePath = gatesObject[`${gatename}`];
+
+  if (!GatePath) {
+    console.error("Path for this gate was not found");
+  }
+
+  child_process.exec(
+    `bash ${process.cwd()}/blink-terminal.sh ${GatePath}`,
+    (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error: ${error.message}`);
+        return;
+      }
+      if (stderr) {
+        console.error(`stderr: ${stderr}`);
+        return;
+      }
+    }
+  );
+}
+
+function updatePreferredEditor(editorName: string) {
+  try {
+    const configObject = getConfigObject();
+
+    configObject.CLIEditorLauncher = editorName;
+    fs.writeFileSync(configFilePath, JSON.stringify(configObject), "utf-8");
+  } catch (error) {
+    console.error("failed to change target editor");
+    console.log(error);
+  }
 }
 
 function execute() {
@@ -110,11 +176,20 @@ function execute() {
       blinkToGate(process.argv[3]);
       break;
     }
+    case "use": {
+      updatePreferredEditor(process.argv[3]);
+      break;
+    }
     case "list": {
       listGates();
       break;
     }
     default: {
+      //TODO: might not need the Commands check here at all
+      if (!Commands[process.argv[2]]) {
+        blinkTerminal(process.argv[2]);
+        break;
+      }
       showHelp();
       break;
     }

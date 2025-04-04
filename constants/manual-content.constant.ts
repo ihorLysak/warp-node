@@ -1,0 +1,11 @@
+export const manualContent = `
+usage:
+    warp [option] - reopen terminal at the gate named [option]
+    warp [command] [option] - see usage below
+
+commands:
+    add [option] - add gate of name [option] to warp
+    remove [option] - remove gate of name [option] to warp
+    blink [option] - blink to gate of name [option]
+    list - list all of the gate and absolute paths associated with them
+`;
